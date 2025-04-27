@@ -12,16 +12,19 @@ try:
     from viewmodel.analysis_viewmodel import AnalysisViewModel
     from gui.localization import LocalizationManager
 except ImportError as e:
-     print(f"Error importing View/ViewModel/Localization in main.py: {e}")
-     print("Ensure gui/ and viewmodel/ packages are correctly structured.")
-     sys.exit(1)
+    print(f"Error importing View/ViewModel/Localization in main.py: {e}")
+    print("Ensure gui/ and viewmodel/ packages are correctly structured.")
+    sys.exit(1)
 
 # --- Initialize Localization (remains global or in scope) ---
 print("Initializing LocalizationManager...")
 loc_manager = LocalizationManager(locales_dir="locales", default_lang="en")
-print(f"LocalizationManager initialized. Current lang: {loc_manager.get_current_language()}")
+print(
+    f"LocalizationManager initialized. Current lang: {loc_manager.get_current_language()}"
+)
 available_langs = loc_manager.get_available_languages()
 print(f"Available languages found: {available_langs}")
+
 
 def run_app(page: ft.Page):
     """Configures and runs the Flet application."""
@@ -49,8 +52,10 @@ def run_app(page: ft.Page):
         # This assumes lang_dropdown is accessible here.
         # Check if the manager's current lang differs from selection after potential fallback
         if lang_dropdown.value != loc_manager.get_current_language():
-             lang_dropdown.value = loc_manager.get_current_language()
-             print(f"Dropdown value reset to {lang_dropdown.value} after potential fallback.")
+            lang_dropdown.value = loc_manager.get_current_language()
+            print(
+                f"Dropdown value reset to {lang_dropdown.value} after potential fallback."
+            )
         page.update()
         print("--- change_language finished ---")
 
@@ -58,14 +63,14 @@ def run_app(page: ft.Page):
     # Moved definition inside run_app to ensure it's recreated if needed,
     # though currently it's only created once.
     lang_dropdown = ft.Dropdown(
-        value=loc_manager.get_current_language(), # Set initial value
+        value=loc_manager.get_current_language(),  # Set initial value
         options=[
             ft.dropdown.Option(lang)
-            for lang in loc_manager.get_available_languages() # Get available languages
+            for lang in loc_manager.get_available_languages()  # Get available languages
         ],
         on_change=change_language,
         width=100,
-        tooltip="Select Language" # Add key: "select_language_tooltip"
+        tooltip="Select Language",  # Add key: "select_language_tooltip"
     )
     print(f"lang_dropdown defined. Options count: {len(lang_dropdown.options)}")
 
@@ -73,8 +78,8 @@ def run_app(page: ft.Page):
     # This line assigns the created AppBar to the page's appbar property.
     # It MUST be executed for the AppBar to appear.
     page.appbar = ft.AppBar(
-        title=ft.Text(loc_manager.tr("app_title")), # Use initial language for title
-        actions=[lang_dropdown], # Add the dropdown to the AppBar
+        title=ft.Text(loc_manager.tr("app_title")),  # Use initial language for title
+        actions=[lang_dropdown],  # Add the dropdown to the AppBar
         # Optional: Force a visible background color for testing
         # bgcolor=ft.colors.SURFACE_VARIANT
     )
@@ -89,8 +94,12 @@ def run_app(page: ft.Page):
     def build_and_set_view():
         # Get the current translator function from the manager
         current_tr = loc_manager.tr
-        print(f"--- build_and_set_view called (Lang: {loc_manager.get_current_language()}) ---")
-        print(f"Building view with language: {loc_manager.get_current_language()}") # Debug print
+        print(
+            f"--- build_and_set_view called (Lang: {loc_manager.get_current_language()}) ---"
+        )
+        print(
+            f"Building view with language: {loc_manager.get_current_language()}"
+        )  # Debug print
         # Create the AppView instance
         app_view_instance = AppView(view_model=view_model, tr=current_tr)
         # Assign the view's update method to the view model's callback
@@ -103,24 +112,24 @@ def run_app(page: ft.Page):
 
         # Update page title in the existing AppBar
         if page.appbar and page.appbar.title:
-             page.appbar.title.value = current_tr("app_title")
-             print("AppBar title updated.")
+            page.appbar.title.value = current_tr("app_title")
+            print("AppBar title updated.")
         else:
-             print("Cannot update AppBar title - AppBar or title is None.")
+            print("Cannot update AppBar title - AppBar or title is None.")
         print("--- build_and_set_view finished ---")
 
     # --- Initial View Setup ---
-    build_and_set_view() # Call it once to build the initial view
+    build_and_set_view()  # Call it once to build the initial view
 
     # --- Page Settings ---
     page.vertical_alignment = ft.MainAxisAlignment.START
     page.window_width = 600
     page.window_height = 1000
     print("Page settings applied. Calling final page.update()...")
-    page.update() # Final initial render
+    page.update()  # Final initial render
     print("--- run_app finished ---")
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     print("Starting Flet app...")
-    ft.app(target=run_app) 
+    ft.app(target=run_app)

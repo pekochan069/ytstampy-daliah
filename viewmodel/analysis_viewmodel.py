@@ -11,6 +11,7 @@ try:
 except ImportError:
     # Handle potential path issues if running viewmodel directly
     import sys
+
     parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     if parent_dir not in sys.path:
         sys.path.append(parent_dir)
@@ -24,22 +25,34 @@ CONFIG_FILE_PATH = "user_config.json"
 # Assuming data_models.py is accessible from the viewmodel directory's perspective
 # Adjust the import path if necessary (e.g., from ..model.data_models import ...)
 try:
-    from model.data_models import AnalysisResults, Segment, SegmentIdentification, SongIdentificationResult
+    from model.data_models import (
+        AnalysisResults,
+        Segment,
+        SegmentIdentification,
+        SongIdentificationResult,
+    )
 except ImportError:
     # Handle path adjustments if running viewmodel scripts directly or packaging issues
     import sys
     import os
+
     # Add project root to path if necessary (adjust based on your structure)
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     if project_root not in sys.path:
         sys.path.append(project_root)
-    from model.data_models import AnalysisResults, Segment, SegmentIdentification, SongIdentificationResult
+    from model.data_models import (
+        AnalysisResults,
+        Segment,
+        SegmentIdentification,
+    )
+
 
 class AnalysisViewModel:
     """
     Manages the state and logic for the Singing Analysis GUI.
     Acts as the intermediary between the View (GUI) and the Model (Pipeline).
     """
+
     def __init__(self, view_update_callback: Callable):
         """
         Args:
@@ -52,17 +65,21 @@ class AnalysisViewModel:
         # --- UI State Properties ---
         # Configuration state (Initialize with defaults, then try loading saved)
         self.config: Dict[str, Any] = DEFAULT_CONFIG.copy()
-        self._load_config_from_file() # Load saved config over defaults
+        self._load_config_from_file()  # Load saved config over defaults
 
         # Runtime state
         self.is_running: bool = False
         self.status_message: str = "Idle"
         self.progress_value: Optional[float] = 0.0
         self.log_messages: List[str] = ["[INFO] Application started."]
-        if os.path.exists(CONFIG_FILE_PATH): # Add log message if config was loaded
-             self.log_messages.append(f"[INFO] Loaded configuration from {CONFIG_FILE_PATH}")
+        if os.path.exists(CONFIG_FILE_PATH):  # Add log message if config was loaded
+            self.log_messages.append(
+                f"[INFO] Loaded configuration from {CONFIG_FILE_PATH}"
+            )
         else:
-             self.log_messages.append("[INFO] No saved configuration found, using defaults.")
+            self.log_messages.append(
+                "[INFO] No saved configuration found, using defaults."
+            )
 
         self._start_time: Optional[datetime] = None
         self._analysis_just_completed: bool = False
@@ -79,13 +96,17 @@ class AnalysisViewModel:
         """Loads configuration from the JSON file, merging with defaults."""
         try:
             if os.path.exists(CONFIG_FILE_PATH):
-                with open(CONFIG_FILE_PATH, 'r') as f:
+                with open(CONFIG_FILE_PATH, "r", encoding="utf-8") as f:
                     saved_config = json.load(f)
                     # Merge saved config onto defaults (saved values override defaults)
                     self.config.update(saved_config)
-                    print(f"ViewModel: Loaded config from {CONFIG_FILE_PATH}") # Debug log
+                    print(
+                        f"ViewModel: Loaded config from {CONFIG_FILE_PATH}"
+                    )  # Debug log
             else:
-                 print(f"ViewModel: No config file found at {CONFIG_FILE_PATH}. Using defaults.")
+                print(
+                    f"ViewModel: No config file found at {CONFIG_FILE_PATH}. Using defaults."
+                )
         except (json.JSONDecodeError, IOError, Exception) as e:
             # Log error but continue with defaults
             print(f"Warning: Failed to load config from {CONFIG_FILE_PATH}: {e}")
@@ -94,10 +115,10 @@ class AnalysisViewModel:
     def _save_config_to_file(self):
         """Saves the current configuration to the JSON file."""
         try:
-            with open(CONFIG_FILE_PATH, 'w') as f:
+            with open(CONFIG_FILE_PATH, "w", encoding="utf-8") as f:
                 # Save only the current self.config (which includes user input)
                 json.dump(self.config, f, indent=4)
-            print(f"ViewModel: Saved current config to {CONFIG_FILE_PATH}") # Debug log
+            print(f"ViewModel: Saved current config to {CONFIG_FILE_PATH}")  # Debug log
             # Optionally add success message to main log?
             # self.log_messages.append(f"[INFO] Configuration saved to {CONFIG_FILE_PATH}")
         except (IOError, Exception) as e:
@@ -133,7 +154,7 @@ class AnalysisViewModel:
     def update_full_config(self, new_config_values: Dict[str, Any]):
         """Updates the entire configuration dictionary (e.g., from GUI fields)."""
         self.config.update(new_config_values)
-        print(f"ViewModel: Full config updated by View.")
+        print("ViewModel: Full config updated by View.")
         # Saving will happen in start_analysis
 
     def start_analysis(self):
@@ -143,29 +164,35 @@ class AnalysisViewModel:
             return
 
         # --- Save the current config before starting ---
-        self._save_config_to_file() # Save the config gathered from UI + existing
+        self._save_config_to_file()  # Save the config gathered from UI + existing
 
         # --- Proceed with starting analysis ---
         self.is_running = True
         self._start_time = datetime.now()
         self._analysis_just_completed = False
         self.analysis_results = None
-        self.log_messages.append("[INFO] Starting analysis...") # Overwrite previous log? Or append? Append is safer.
+        self.log_messages.append(
+            "[INFO] Starting analysis..."
+        )  # Overwrite previous log? Or append? Append is safer.
         self.status_message = "Initializing..."
         self.progress_value = 0.0
         self._notify_view()
 
-        current_config = self.config.copy() # Use the potentially updated and saved config
+        current_config = (
+            self.config.copy()
+        )  # Use the potentially updated and saved config
         # Make sure API key is handled (check saved config first, then env)
-        if not current_config.get('gemini_api_key'):
-             current_config['gemini_api_key'] = os.environ.get('GEMINI_API_KEY', '')
-             if not current_config['gemini_api_key']:
-                  self._pipeline_status_update("Warning: Gemini API Key not set in config or environment.")
+        if not current_config.get("gemini_api_key"):
+            current_config["gemini_api_key"] = os.environ.get("GEMINI_API_KEY", "")
+            if not current_config["gemini_api_key"]:
+                self._pipeline_status_update(
+                    "Warning: Gemini API Key not set in config or environment."
+                )
 
         self.pipeline_instance = SingingAnalysisPipeline(
             config=current_config,
             status_callback=self._pipeline_status_update,
-            progress_callback=self._pipeline_progress_update
+            progress_callback=self._pipeline_progress_update,
         )
 
         def run_in_thread():
@@ -174,11 +201,14 @@ class AnalysisViewModel:
             try:
                 results = self.pipeline_instance.run()
                 self.analysis_results = results
-                if results is not None: # Assume non-None results dictionary means success
+                if (
+                    results is not None
+                ):  # Assume non-None results dictionary means success
                     success = True
             except Exception as e:
                 self._pipeline_status_update(f"Pipeline Thread Error: {e}")
                 import traceback
+
                 self.log_messages.append(f"[ERROR] {traceback.format_exc()}")
             finally:
                 self.is_running = False
@@ -197,15 +227,17 @@ class AnalysisViewModel:
     def request_stop(self):
         """Requests the analysis pipeline to stop."""
         if not self.is_running or not self.pipeline_instance:
-             self._pipeline_status_update("Cannot stop: Analysis not running.")
-             return
+            self._pipeline_status_update("Cannot stop: Analysis not running.")
+            return
 
         self._pipeline_status_update("Requesting stop...")
-        self._notify_view() # Show status update immediately
-        if hasattr(self.pipeline_instance, 'request_stop'):
-             self.pipeline_instance.request_stop()
+        self._notify_view()  # Show status update immediately
+        if hasattr(self.pipeline_instance, "request_stop"):
+            self.pipeline_instance.request_stop()
         else:
-             self.log_messages.append("[WARNING] Pipeline does not have a 'request_stop' method. Stopping may be delayed.")
+            self.log_messages.append(
+                "[WARNING] Pipeline does not have a 'request_stop' method. Stopping may be delayed."
+            )
 
     def save_results(self):
         """Triggers saving results using the completed pipeline instance."""
@@ -213,20 +245,24 @@ class AnalysisViewModel:
             self._pipeline_status_update("Cannot save results: Analysis is running.")
             return
         if not self.pipeline_instance or not self.analysis_results:
-            self._pipeline_status_update("Cannot save results: No analysis has been run successfully.")
+            self._pipeline_status_update(
+                "Cannot save results: No analysis has been run successfully."
+            )
             return
 
         try:
             self._pipeline_status_update("Saving results...")
-            self.pipeline_instance.save_results() # Uses callbacks internally now
+            self.pipeline_instance.save_results()  # Uses callbacks internally now
         except Exception as e:
-             self._pipeline_status_update(f"Error triggering save: {e}")
+            self._pipeline_status_update(f"Error triggering save: {e}")
         finally:
-             self._notify_view() # Ensure UI reflects final status
+            self._notify_view()  # Ensure UI reflects final status
 
     def visualize_results(self):
         """Visualization feature is disabled in the GUI."""
-        self._pipeline_status_update("Visualization feature is currently disabled in the GUI.")
+        self._pipeline_status_update(
+            "Visualization feature is currently disabled in the GUI."
+        )
         # Optionally, you could still call the backend pipeline's visualize method
         # if you want the files generated even without a button press.
         # if not self.is_running and self.pipeline_instance:
@@ -268,24 +304,34 @@ class AnalysisViewModel:
     def get_identification_results(self) -> List[SegmentIdentification]:
         """Returns the list of SegmentIdentification results from the analysis."""
         # Access the attribute of the AnalysisResults dataclass
-        return self.analysis_results.identification_results if self.analysis_results else []
+        return (
+            self.analysis_results.identification_results
+            if self.analysis_results
+            else []
+        )
 
     def get_identified_songs(self) -> list:
         """Extracts successfully identified song info from analysis results."""
         # Use the new get_identification_results method which returns the correct list
         identification_results = self.get_identification_results()
         if not identification_results:
-             return []
+            return []
 
         identified_songs = []
 
         for result in identification_results:
             # result is now a SegmentIdentification object
-            song_info = result.identification # This is a SongIdentificationResult object or None
+            song_info = (
+                result.identification
+            )  # This is a SongIdentificationResult object or None
 
             # Check if song_info exists and doesn't contain an error key,
             # and has at least a title or artist to be considered successful.
-            if song_info and not song_info.error and (song_info.title or song_info.artist):
+            if (
+                song_info
+                and not song_info.error
+                and (song_info.title or song_info.artist)
+            ):
                 # Create a dictionary representation for the view/formatter if needed,
                 # including segment start time for timestamping.
                 song_data_for_output = {
@@ -293,8 +339,8 @@ class AnalysisViewModel:
                     "artist": song_info.artist,
                     "confidence": song_info.confidence,
                     "explanation": song_info.explanation,
-                    "segment_start": result.segment.start, # Get start time from Segment object
-                    "refined_lyrics": song_info.refined_lyrics_used # Pass refined lyrics too
+                    "segment_start": result.segment.start,  # Get start time from Segment object
+                    "refined_lyrics": song_info.refined_lyrics_used,  # Pass refined lyrics too
                 }
                 identified_songs.append(song_data_for_output)
 
@@ -302,7 +348,9 @@ class AnalysisViewModel:
 
     def get_youtube_comment_string(self) -> str:
         """Formats identified songs into a string suitable for YouTube comments."""
-        identified_songs = self.get_identified_songs() # This now returns list of dicts with needed info
+        identified_songs = (
+            self.get_identified_songs()
+        )  # This now returns list of dicts with needed info
 
         if not identified_songs:
             return "No songs identified (segments might have been too short or identification failed)."
@@ -311,14 +359,16 @@ class AnalysisViewModel:
         found_any = False
 
         for song in identified_songs:
-            start_seconds = song.get('segment_start')
+            start_seconds = song.get("segment_start")
             if start_seconds is not None:
-                timestamp = str(timedelta(seconds=int(start_seconds))).split('.')[0] # Format as H:MM:SS
+                timestamp = str(timedelta(seconds=int(start_seconds))).split(".")[
+                    0
+                ]  # Format as H:MM:SS
             else:
                 timestamp = "? Unknown Time ?"
 
-            title = song.get('title', 'Unknown Title')
-            artist = song.get('artist', 'Unknown Artist')
+            title = song.get("title", "Unknown Title")
+            artist = song.get("artist", "Unknown Artist")
             comment_lines.append(f"{timestamp} - {artist} - {title}")
             found_any = True
 
@@ -329,32 +379,34 @@ class AnalysisViewModel:
         return "\n".join(comment_lines)
 
     def get_summary_info(self) -> Dict[str, Any]:
-         # Check if results exist and contain final_segments
-         if not self.analysis_results:
-             return {"key": "summary_no_analysis", "kwargs": {}}
+        # Check if results exist and contain final_segments
+        if not self.analysis_results:
+            return {"key": "summary_no_analysis", "kwargs": {}}
 
-         # Access attributes from the dataclass
-         segments: List[Segment] = self.analysis_results.final_segments
+        # Access attributes from the dataclass
+        segments: List[Segment] = self.analysis_results.final_segments
 
-         # Check if segments list is empty
-         if not segments:
-              return {"key": "summary_no_segments", "kwargs": {}}
+        # Check if segments list is empty
+        if not segments:
+            return {"key": "summary_no_segments", "kwargs": {}}
 
-         # Check if total_duration exists in results
-         total_duration = self.analysis_results.total_duration or 0 # Handle None
+        # Check if total_duration exists in results
+        total_duration = self.analysis_results.total_duration or 0  # Handle None
 
-         # Calculate total singing time using tuple indexing
-         total_singing_time = sum(seg.duration for seg in segments)
+        # Calculate total singing time using tuple indexing
+        total_singing_time = sum(seg.duration for seg in segments)
 
-         percentage = (total_singing_time / total_duration * 100) if total_duration else 0
-         return {
-             "key": "summary_with_segments",
-             "kwargs": {
-                 "count": len(segments),
-                 "total_time": f"{total_singing_time:.1f}", # Format here for simplicity
-                 "percentage": f"{percentage:.1f}"        # Format here for simplicity
-             }
-         }
+        percentage = (
+            (total_singing_time / total_duration * 100) if total_duration else 0
+        )
+        return {
+            "key": "summary_with_segments",
+            "kwargs": {
+                "count": len(segments),
+                "total_time": f"{total_singing_time:.1f}",  # Format here for simplicity
+                "percentage": f"{percentage:.1f}",  # Format here for simplicity
+            },
+        }
 
     def is_analysis_running(self) -> bool:
         return self.is_running
@@ -367,4 +419,4 @@ class AnalysisViewModel:
     def get_full_config(self) -> Dict[str, Any]:
         """Returns a copy of the current configuration."""
         # Now returns config potentially loaded from file
-        return self.config.copy() 
+        return self.config.copy()
