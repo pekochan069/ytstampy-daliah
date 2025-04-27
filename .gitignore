@@ -1,3 +1,5 @@
 __pycache__
 output_analysis_gui/
 user_config.json
+.venv/
+build/
