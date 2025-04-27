@@ -27,7 +27,7 @@ dev = ["poethepoet>=0.34.0", "ruff>=0.11.7", "flet[all]==0.27.6"]
 dev = "main.py"
 format = "ruff format ."
 lint = "ruff check --fix ."
-build-windows = "flet build windows"
+build-windows = "flet build windows --verbose --no-rich-output"
 build-macos = "flet build macos"
 build-linux = "flet build linux"
 
